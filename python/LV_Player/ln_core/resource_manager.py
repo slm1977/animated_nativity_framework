@@ -6,8 +6,33 @@ Created on 16/nov/2014
 
 import os.path, random
 
-
-
+class ImageKey:
+    CLOUD = "CLOUD"
+    SNOW_BALL = "SNOW_BALL"
+    RAIN_DROP = "RAIN_DROP"
+    
+class BackgroundKey:
+    BACKGROUND_NIGHT = "BACKGROUND_NIGHT"
+    BACKGROUND_NIGHT_THUNDER = "BACKGROUND_NIGHT_THUNDER"
+    
+class SoundKey:
+    BACKGROUND_MUSIC = "BACKGROUND_MUSIC"
+    BACKGROUND_NIGHT_THUNDER = "BACKGROUND_NIGHT_THUNDER"
+    COW = "COW"
+    CRICKET = "CRICKET"
+    DOG = "DOG"
+    DONKEY = "DONKEY"
+    LAMB = "LAMB"
+    SHEEP= "SHEEP"
+    PEOPLE = "PEOPLE"
+    WIND_CHIMES = "WIND_CHIMES"
+    RIVER = "RIVER"
+    FIRE = "FIRE"
+    THUNDER = "THUNDER"
+    WIND = "WIND"
+    DOG = "DOG" 
+     
+                
 image_object_path_dict = {  "CLOUD" : ["transparent_cloud.png",
                                        "transparent_cloud_2.png",
                                        "transparent_cloud_3.png"],
@@ -18,8 +43,8 @@ image_object_path_dict = {  "CLOUD" : ["transparent_cloud.png",
              }
 
 image_background_path_dict = {
-                               "BACKGROUND_NIGHT" : ["cielo_stellato_cometa.png"],
-                               "BACKGROUND_NIGHT_THUNDER" : ["cielo_stellato_cometa_2.png"]
+                               "BACKGROUND_NIGHT" : ["cielo_stellato_cometa.jpg"],
+                               "BACKGROUND_NIGHT_THUNDER" : ["cielo_stellato_cometa_2.jpg"]
                               }
 
 sound_path_dict = {
@@ -30,6 +55,7 @@ sound_path_dict = {
                    # people, animals and other "human" sound effects
                    "COW" : ["cow.wav"],
                    "CRICKET": ["cricket.wav"],
+                   "DONKEY": ["donkey.wav"],
                    "DOG" : ["dog.wav"],
                    "LAMB" : ["lamb.wav"],
                    "SHEEP" : ["sheep.wav"],
@@ -54,19 +80,15 @@ class ResourceManager:
         self.root_path = root_path
     
     def get_resource(self, res_type, res_key, res_index=0):
-        print "res path key:%s" % res_type[0]
         if res_index<0:
-            print "index<0"
             res_index = random.randint(0, len(res_type[1][res_key])-1)
-            print "res_index set to:%d" % res_index
-       
+             
         res_name = res_type[1][res_key][res_index]
         res_path = os.path.join(self.root_path,res_type[0],res_name)
         
         return res_path       
      
     def get_sound(self,sound_key, sound_index=0):
-        print "RR:%s" % ResourcePath.SOUND
         return self.get_resource(ResourcePath.SOUND, sound_key, sound_index)
     
     def get_background(self,bg_key, bg_index=0):
@@ -84,6 +106,9 @@ class ResourceManager:
 
 if __name__=="__main__":
     rm = ResourceManager()
+    print "Cloud 1:%s" % rm.get_image(ImageKey.CLOUD, -1)
+    print "Cloud 1:%s" % rm.get_image(ImageKey.CLOUD, -1)
+    print "Cloud 1:%s" % rm.get_image(ImageKey.CLOUD, -1)
     print "Object lists Dir:%s" % rm.get_resources_path(ResourcePath.IMAGE_OBJECT)
     print "Object lists:%s" % rm.get_resource_keys(ResourcePath.IMAGE_OBJECT)
     print "Sound lists:%s" % rm.get_resource_keys(ResourcePath.SOUND)
