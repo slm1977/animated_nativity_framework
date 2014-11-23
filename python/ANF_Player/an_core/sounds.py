@@ -4,7 +4,7 @@ Created on 16/nov/2014
 @author: smonni
 '''
 
-from ln_core.resource_manager import ResourceManager 
+from resource_manager import ResourceManager 
 import pygame
 import random
 

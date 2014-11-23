@@ -1,0 +1,6 @@
+/__init__.pyc
+/admin.pyc
+/client_socket.pyc
+/models.pyc
+/urls.pyc
+/views.pyc

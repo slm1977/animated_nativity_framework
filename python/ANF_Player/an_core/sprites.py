@@ -7,7 +7,7 @@ import pygame
 import random
 from random import randint
 from resource_manager import ResourceManager , ImageKey
-from ln_core.resource_manager import BackgroundKey
+from resource_manager import BackgroundKey
 
 class ElementSprite(pygame.sprite.Sprite):
     image = None

@@ -6,13 +6,13 @@ Created on 06/dic/2012
 
 import pygame.locals
 
-from ln_core.sprites import Cloud, Background, SnowBall,ThunderBackground
-from ln_core.sounds import SoundManager 
-from ln_core.resource_manager import SoundKey
+from sprites import Cloud, Background, SnowBall,ThunderBackground
+from sounds import SoundManager 
+from resource_manager import SoundKey
 
-from ln_core.graphics_context import GC       
+from graphics_context import GC       
 from pygame.locals import KEYDOWN, K_q
-from ln_core.comm.server_socket import SocketThread
+from comm.server_socket import SocketThread
 
 import random
 import time
@@ -55,27 +55,36 @@ class MeteoViewer:
        
         self.setup_animals_sounds_playlist()
         
-        #self.socketReceiver = SocketThread(self.on_data_received)
-        #self.socketReceiver.start()
+        self.socketReceiver = SocketThread(self.on_data_received)
+        self.socketReceiver.start()
         
         self.run()
         
-    def on_data_received(self, data):
-        print "Data received from the client:%s" % data
-        data = self.parse_data(data)
-        if (data[0]=="SNOW_ON"):
-            MeteoViewer.SNOW_ON = True
-        elif (data[0]=="SNOW_OFF"):
-            MeteoViewer.SNOW_ON = False
-        if (data[0]=="CLOUDS_ON"):
-            MeteoViewer.CLOUDS_ON = True
-        elif (data[0]=="CLOUDS_OFF"):
-            MeteoViewer.CLOUDS_ON = False
-        elif (data[0]=="SNOW_FLICK_CHANGE_COUNT"):
-            self.snow_balls_count = int(data[1])
+    def on_data_received(self, data_cmds):
+        print "Data received from the client:%s" % str(data_cmds)
+        cmds = self.parse_data(data_cmds)
+        print "Recived commands:%s" % str(cmds)
+        for data in cmds:
+            print "PARSE COMMAND:%s" % str(data)
+            if (data[0]=="SNOW_ON"):
+                MeteoViewer.SNOW_ON = True
+            elif (data[0]=="SNOW_OFF"):
+                MeteoViewer.SNOW_ON = False
+            if (data[0]=="CLOUDS_ON"):
+                MeteoViewer.CLOUDS_ON = True
+            elif (data[0]=="CLOUDS_OFF"):
+                MeteoViewer.CLOUDS_ON = False
+            elif (data[0]=="SNOW_FLICK_CHANGE_COUNT"):
+                self.snow_balls_count = int(data[1])
             
     def parse_data(self, data):
-        return data.split("|")
+        cmds = data.split("|")
+        print "Commands:%s" % str(cmds)
+        cmds_data =  []
+        for cmd in cmds:
+            cmds_data.append(cmd.split(","))
+        return cmds_data
+          
         
         
     def init_sound(self):
@@ -115,7 +124,7 @@ class MeteoViewer:
         self.play_next_song(1)
 
     def play_next_song(self,num_chan):
-        print "play next song!"
+        #print "play next song!"
         if num_chan==0:
             self.playlist_1.play_next_song(-1, random.randint(0,1))
         elif num_chan==1:  
