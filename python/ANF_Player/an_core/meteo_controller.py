@@ -17,6 +17,7 @@ from comm.server_socket import SocketThread
 import random
 import time
 import sys
+from comm.command_manager import Command
 
 class MeteoViewer:
     EV_END_CHANNEL_0 = pygame.locals.USEREVENT+1
@@ -29,6 +30,8 @@ class MeteoViewer:
 # STATES 
     SNOW_ON = True
     CLOUDS_ON = True
+    SCREEN_ON = True
+    SOUNDS_ON = True
     
     
     def __init__(self,gc):
@@ -44,7 +47,7 @@ class MeteoViewer:
         self.background =  Background(self.gc)
         
         self.clouds_count = 10
-        self.snow_balls_count = 130
+        self.snow_balls_count = 100
         
         
         self.create_snow_balls(self.snow_balls_count)
@@ -57,23 +60,33 @@ class MeteoViewer:
         
         self.socketReceiver = SocketThread(self.on_data_received)
         self.socketReceiver.start()
-        
+
         self.run()
         
     def on_data_received(self, data_cmds):
         print "Data received from the client:%s" % str(data_cmds)
         cmds = self.parse_data(data_cmds)
-        print "Recived commands:%s" % str(cmds)
+        print "Received commands:%s" % str(cmds)
         for data in cmds:
             print "PARSE COMMAND:%s" % str(data)
-            if (data[0]=="SNOW_ON"):
+            if (data[0]==Command.SNOW_ON): 
                 MeteoViewer.SNOW_ON = True
             elif (data[0]=="SNOW_OFF"):
                 MeteoViewer.SNOW_ON = False
-            if (data[0]=="CLOUDS_ON"):
+            if (data[0]==Command.CLOUDS_ON):
                 MeteoViewer.CLOUDS_ON = True
-            elif (data[0]=="CLOUDS_OFF"):
+            elif (data[0]==Command.CLOUDS_OFF):
                 MeteoViewer.CLOUDS_ON = False
+            elif(data[0]==Command.SCREEN_ON):
+                MeteoViewer.SCREEN_ON = True
+            elif(data[0]==Command.SCREEN_OFF):
+                MeteoViewer.SCREEN_ON = False
+            elif(data[0]==Command.SOUNDS_ON):
+                MeteoViewer.SOUNDS_ON = True
+            elif(data[0]==Command.SOUNDS_OFF):
+                self.stop_sounds()
+                MeteoViewer.SOUNDS_ON = False
+                
             elif (data[0]=="SNOW_FLICK_CHANGE_COUNT"):
                 self.snow_balls_count = int(data[1])
             
@@ -86,7 +99,6 @@ class MeteoViewer:
         return cmds_data
           
         
-        
     def init_sound(self):
         # sounds
         try:
@@ -97,9 +109,9 @@ class MeteoViewer:
             
              
             #sheep.fadeout(2000)
-            people = self.sound_manager.get_sound(6, SoundKey.PEOPLE)
-            people.play(-1)
-            people.set_volume(0.5)
+            self.people = self.sound_manager.get_sound(6, SoundKey.PEOPLE)
+            self.people.play(-1)
+            self.people.set_volume(0.5)
             #people.fadeout(2000)
             
             self.thunder = self.sound_manager.get_sound(4, SoundKey.THUNDER)
@@ -130,11 +142,16 @@ class MeteoViewer:
         elif num_chan==1:  
             self.playlist_2.play_next_song(-1, random.randint(0,1))
             
+    
+    def stop_sounds(self):
+        self.music.stop()
+        self.people.stop()
+        self.playlist_1.stop()
+        self.playlist_2.stop()
         
     def create_clouds(self, num=2):
          
         for i in range(num):
-            
             cloud = Cloud(-1,self.gc.screen_w+(i+1)*10, random.randrange(80,200), -random.randrange(1,5), random.randrange(-2,2))
             cloud.scalePercent(random.randrange(50,100))
             self.clouds.append(cloud)
@@ -146,7 +163,7 @@ class MeteoViewer:
         for i in range(num):
             x0 = random.randrange(0, self.gc.screen_w)
             if y0_to_set:
-                y0 = random.randrange(-self.gc.screen_h, 0)
+                y0 = random.randrange(-self.gc.screen_h, -10)
             speed_x = 1
             speed_y = random.randrange(5, 10)
             
@@ -170,10 +187,10 @@ class MeteoViewer:
             if pn.y+ 10 > self.gc.screen_h:
                 self.snow_balls.remove(pn)
                 num_rem +=1
-        
+        print "flick 1:(%s,%s)" %  (self.snow_balls[0].x, self.snow_balls[0].y)
         self.create_snow_balls(self.snow_balls_count - len(self.snow_balls))
         
-    def play_thunder(self): 
+    def draw_thunder(self): 
       
         v = random.random()
         if v<0.6:
@@ -188,29 +205,50 @@ class MeteoViewer:
         
         pygame.draw.rect(self.gc.screen,self.gc.background_color, (0, 0,self.gc.screen_w, self.gc.screen_h)) # clear screen
         
+        if MeteoViewer.SCREEN_ON:
+            if self.thunder_on:
+                self.draw_thunder()
+            else:
+                self.background.draw(self.gc) 
+                
+            if MeteoViewer.SNOW_ON: 
+                for sn in self.snow_balls:
+                    sn.draw(self.gc)
+                    
+            
+            if MeteoViewer.CLOUDS_ON:       
+                for n in self.clouds:
+                    n.draw(self.gc)
+            
+        pygame.display.update()
+            
+    def play_sounds(self, event):   
+        
+        if not MeteoViewer.SOUNDS_ON:
+            return
         if not self.thunder_on:
             r = random.random()
             if r < 0.003:
                 self.thunder_ts =time.time()
                 self.thunder_on = True
                 self.thunder.play()
-        
-        if self.thunder_on:
-            self.play_thunder()
-        else:
-            self.background.draw(self.gc) 
-            
-        if MeteoViewer.SNOW_ON: 
-            for sn in self.snow_balls:
-                sn.draw(self.gc)
+
+        if (event.type==MeteoViewer.EV_PLAY_CHAN_0):
+                #print "EV_PLAY_CHAN_0!!"
+                pygame.time.set_timer(MeteoViewer.EV_END_CHANNEL_0,0)
+                self.play_next_song(0)  
+        elif (event.type==MeteoViewer.EV_PLAY_CHAN_1):
+            #print "EV_PLAY_CHAN_1!!"
+            pygame.time.set_timer(MeteoViewer.EV_END_CHANNEL_1,0)
+            self.play_next_song(1)
+        elif (event.type==MeteoViewer.EV_END_CHANNEL_0):
+            #print ".EV_END_CHANNEL_0!!"
+            pygame.time.set_timer(MeteoViewer.EV_PLAY_CHAN_0, random.randrange(2500,6000))
+        elif (event.type==MeteoViewer.EV_END_CHANNEL_1):
+            #print ".EV_END_CHANNEL_1!!"
+            pygame.time.set_timer(MeteoViewer.EV_PLAY_CHAN_1, random.randrange(2500,6000))
                 
-        
-        if MeteoViewer.CLOUDS_ON:       
-            for n in self.clouds:
-                n.draw(self.gc)
-            
-        pygame.display.update()
-               
+                    
     def run(self):
         print "Running meteo controller"
         done = False
@@ -218,21 +256,9 @@ class MeteoViewer:
         y = 0
         while not done:
             for event in pygame.event.get():
-                if (event.type==MeteoViewer.EV_PLAY_CHAN_0):
-                    print "EV_PLAY_CHAN_0!!"
-                    pygame.time.set_timer(MeteoViewer.EV_END_CHANNEL_0,0)
-                    self.play_next_song(0)  
-                elif (event.type==MeteoViewer.EV_PLAY_CHAN_1):
-                    print "EV_PLAY_CHAN_1!!"
-                    pygame.time.set_timer(MeteoViewer.EV_END_CHANNEL_1,0)
-                    self.play_next_song(1)
-                elif (event.type==MeteoViewer.EV_END_CHANNEL_0):
-                    print ".EV_END_CHANNEL_0!!"
-                    pygame.time.set_timer(MeteoViewer.EV_PLAY_CHAN_0, random.randrange(2500,6000))
-                elif (event.type==MeteoViewer.EV_END_CHANNEL_1):
-                    print ".EV_END_CHANNEL_1!!"
-                    pygame.time.set_timer(MeteoViewer.EV_PLAY_CHAN_1, random.randrange(2500,6000))
-                    
+                # play sounds
+                self.play_sounds(event)
+                
                 if (event.type == KEYDOWN):
                     if (event.key == K_q):  # quit
                         print "quitting"
@@ -240,6 +266,8 @@ class MeteoViewer:
                         pygame.event.clear()
                       
             self.update_positions()
+            
+            # draw scene
             self.draw()
             self.check_for_regeneration()
             time.sleep(0.01)

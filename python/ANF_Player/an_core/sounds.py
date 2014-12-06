@@ -56,22 +56,21 @@ class SoundPlaylist:
         self.chan.play(self.file_to_play, repeat_count)
         
     def play_next_song(self, index=-1, repeat_count=0):
-        print "play next song among:%s" % str(self.sound_keys_with_index)
+        #print "play next song among:%s" % str(self.sound_keys_with_index)
         if index<0:
             index = random.randrange(0,len(self.sound_keys_with_index)-1)
-        print "play next song:%s Type:%s" % (str(self.sound_keys_with_index[index]),
-                                              str(type(self.sound_keys_with_index[index])))
+        #print "play next song:%s Type:%s" % (str(self.sound_keys_with_index[index]), str(type(self.sound_keys_with_index[index])))
                                              
         if ( len(self.sound_keys_with_index[index])>1 and type(self.sound_keys_with_index[index])==tuple):
-            print "Soundkey %s is a tuple!" %  str(type(self.sound_keys_with_index[index]))
+            #print "Soundkey %s is a tuple!" %  str(type(self.sound_keys_with_index[index]))
             sound_key_index = self.sound_keys_with_index[index][1]
             sound_key = self.sound_keys_with_index[index][0]
         else:
-            print "Soundkey is not a tuple!"
+            #print "Soundkey is not a tuple!"
             sound_key = self.sound_keys_with_index[index]
             sound_key_index = -1
             
-        print "Channel:%s Sound Key: %s Sound Key Index: %s" % (self.channel_index, sound_key, sound_key_index)
+        #print "Channel:%s Sound Key: %s Sound Key Index: %s" % (self.channel_index, sound_key, sound_key_index)
         sound_to_play = Sound(self.channel_index, sound_key, sound_key_index)
         sound_to_play.play(repeat_count)
         #self.chan.play(sound_to_play, repeat_count)
@@ -88,6 +87,7 @@ class SoundPlaylist:
     
 class Music:
     def __init__(self, sound_key, sound_key_index=-1):
+        
         self.rm = ResourceManager()
         self.filename = self.rm.get_sound(sound_key, sound_key_index)
         print "Loading bg music:%s" % self.filename

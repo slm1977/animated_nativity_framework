@@ -5,31 +5,25 @@ Created on 06/dic/2012
 '''
 import pygame
 import random
-from random import randint
-from resource_manager import ResourceManager , ImageKey
-from resource_manager import BackgroundKey
+from Crypto.Random.random import randint
 
 class ElementSprite(pygame.sprite.Sprite):
     image = None
-    rm = ResourceManager()
     
-    def __init__(self, cls, img_path = None, force_reload=False):
+    def __init__(self, cls, img_path = None):
       
         pygame.sprite.Sprite.__init__(self)
-        if not force_reload:
-            if cls.image is None:
-                # This is the first time this class has been instantiated.
-                # So, load the image for this and all subsequence instances.
-                if img_path is not None:
-                    cls.image = pygame.image.load(img_path)
-                else:
-                    cls.image = pygame.Surface([15, 15])
-                    #cls.image = pygame.image.load(img_path)
-                    
-            self.image = cls.image #CarrierSprite.image.convert(CarrierSprite.image)
-        else:
-            self.image = pygame.image.load(img_path)
-            
+
+        if cls.image is None:
+            # This is the first time this class has been instantiated.
+            # So, load the image for this and all subsequence instances.
+            if img_path is not None:
+                cls.image = pygame.image.load(img_path)
+            else:
+                cls.image = pygame.Surface([15, 15])
+                #cls.image = pygame.image.load(img_path)
+                
+        self.image = cls.image #CarrierSprite.image.convert(CarrierSprite.image)
         self.rect = self.image.get_rect()
         self.x = self.rect[0]
         self.y = self.rect[1]
@@ -41,16 +35,19 @@ class ElementSprite(pygame.sprite.Sprite):
     def scalePercent(self,perc):
         size_x = int(self.rect.width*perc/100.0)
         size_y = int(self.rect.height*perc/100.0)
-        self.image = pygame.transform.scale(self.image, (size_x, size_y))
+        print "SIZE:%s,%s" % (size_x,size_y)
+        self.image = pygame.transform.scale(ElementSprite.image, (size_x, size_y))
         self.rect = self.image.get_rect() 
-        
+        print "dopo di scale:%s" % self.rect.width
     
-        
+            
+    
+    
     def update_position(self, x,y):
-        if x!=None:
+        if x:
             self.rect[0] = x
             self.x = x
-        if y!=None:
+        if y:
             self.rect[1] = y
             self.y = y
         
@@ -60,27 +57,23 @@ class ElementSprite(pygame.sprite.Sprite):
 class Background(ElementSprite):
     image = None
     def __init__(self, gc):
-        
-        
-        ElementSprite.__init__(self, self.__class__, ElementSprite.rm.get_background((BackgroundKey.BACKGROUND_NIGHT)))
+        ElementSprite.__init__(self, self.__class__, "res/sfondi/cielo_stellato_cometa.jpg")
         self.image = pygame.transform.scale(self.image, (gc.screen_w, gc.screen_h))
 
 class ThunderBackground(ElementSprite):
     image = None
     def __init__(self,gc):
-        ElementSprite.__init__(self, self.__class__, ElementSprite.rm.get_background((BackgroundKey.BACKGROUND_NIGHT_THUNDER)))   
+        ElementSprite.__init__(self, self.__class__, "res/sfondi/cielo_stellato_cometa_2.jpg")   
         self.image = pygame.transform.scale(self.image, (gc.screen_w, gc.screen_h))
-     
         
 class Cloud(ElementSprite):
     image = None
-    def __init__(self,cloud_index, x,y, speed_x, speed_y=0, swing_vertical = True):
-        ElementSprite.__init__(self, self.__class__,ElementSprite.rm.get_image(ImageKey.CLOUD, cloud_index),True)
+    def __init__(self,file_name, x,y, speed_x, speed_y=0):
+        ElementSprite.__init__(self, self.__class__,file_name)
         self.speed_x = speed_x
         self.speed_y = speed_y
         self.start_x = x
         self.fx = x
-        self.swing_vertical = swing_vertical
         self.update_position(x, y)
         
         
@@ -89,12 +82,8 @@ class Cloud(ElementSprite):
         if self.fx< - self.rect.width:
             self.fx = self.start_x
         
-        if self.swing_vertical:
-            if randint(0,100)> 70:
-                self.speed_y = -self.speed_y
-        
-        
-        self.update_position(round(self.fx),self.y+ self.speed_y)
+        self.y = self.y + randint(-1,1)*randint(0,1)
+        self.update_position(round(self.fx),self.y)
         
        
 
@@ -108,7 +97,7 @@ class SnowBall(ElementSprite):
         self.swing_val = 0
         self.go_right = True
         
-        ElementSprite.__init__(self, self.__class__,ElementSprite.rm.get_image(ImageKey.SNOW_BALL))
+        ElementSprite.__init__(self, self.__class__,"res/snowflick.png")
         self.update_position(x, y)
         
     def scaleSprite(self,size):
@@ -127,10 +116,5 @@ class SnowBall(ElementSprite):
             x_pos = self.x + self.speed_x 
         else:
             x_pos = self.x - self.speed_x   
-        
-        y_pos = self.y+ self.speed_y
-        self.update_position(x_pos, y_pos)  
-        
-        
-        
-        
+                
+        self.update_position(x_pos, self.y+ self.speed_y)  
