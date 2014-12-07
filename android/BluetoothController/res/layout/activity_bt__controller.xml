@@ -238,8 +238,10 @@
  </LinearLayout>
  
   <!-- Spinner Dropdown -->
-    <Spinner
-        android:id="@+id/preset_spinner"
+    <ListView
+        android:id="@+id/preset_list"
+        android:choiceMode="singleChoice" 
+        android:listSelector="@android:color/darker_gray"
         android:layout_width="fill_parent"
         android:layout_height="wrap_content"
         android:prompt="@string/spinner_title"

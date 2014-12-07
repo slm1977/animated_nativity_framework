@@ -1,5 +1,7 @@
 package slm.anf.bluetooth;
 
+package slm.anf.bluetooth;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
@@ -9,17 +11,17 @@ import java.util.List;
 import java.util.Properties;
 import java.util.Set;
 
+import com.javacodegeeks.android.bluetoothtest.R;
+
 
 import slm.anf.bluetooth.ConnectThread.BT_Sender;
 import slm.anf.bluetooth.db.DatabaseHelper;
 import slm.anf.bluetooth.db.DbAdapter;
 import slm.anf.bluetooth.db.Preset;
-
-import com.javacodegeeks.android.bluetoothtest.R;
-
+ 
 import android.app.Activity;
 import android.app.AlertDialog;
-import android.app.Dialog;
+import android.app.Fragment;
 import android.content.DialogInterface;
 import android.content.res.AssetManager;
 import android.database.Cursor;
@@ -34,26 +36,24 @@ import android.view.View.OnClickListener;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.AdapterView.OnItemClickListener;
-import android.widget.AdapterView.OnItemLongClickListener;
 import android.widget.AdapterView.OnItemSelectedListener;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
-import android.widget.ListView;
 import android.widget.SeekBar;
 import android.widget.SeekBar.OnSeekBarChangeListener;
 import android.widget.Spinner;
 import android.widget.Toast;
 import android.widget.ToggleButton;
 
-public class BT_ControllerActivity extends Activity {
-	 public static final String TAG = "BT_ControllerActivity";
+public class BT_ControllerFragment extends Fragment {
+	 public static final String TAG = "BT_ControllerFragment";
 	 private static final int NUM_PINS = 8;
 	 
 	private BT_Sender btSender = null;
 	private HashMap<Integer, Integer> pwmMapper = new HashMap<Integer,Integer>();
 	private DbAdapter dbHelper = null;
-	 private PresetAdapter presetAdapter = null;
+	private ArrayAdapter<Preset> presetAdapter = null;
 	
     private class DigitalPinManager implements OnClickListener, OnSeekBarChangeListener {
        
@@ -233,52 +233,6 @@ public class BT_ControllerActivity extends Activity {
 		};
 		}
 
-    
-     private void showPresetEditorDialog(final Preset preset)
-     {
-    	 final Dialog dialog = new Dialog(this);
-			dialog.setContentView(R.layout.preset_editor);
-			
-			dialog.setTitle("Preset Editor:" + preset.getName());
-			final EditText txtName = (EditText) dialog.findViewById(R.id.editName);
-			txtName.setText(preset.getName());
-			
-			final EditText txtCmd = (EditText) dialog.findViewById(R.id.editCommand);
-			txtCmd.setText(preset.getCommand());
-			Button butCancel = (Button) dialog.findViewById(R.id.button_cancel);
-			butCancel.setOnClickListener(new OnClickListener() {
-				@Override
-				public void onClick(View v) {
-					dialog.dismiss();
-				}
-			});
-			
-			Button butSave = (Button) dialog.findViewById(R.id.button_save);
-			butSave.setOnClickListener(new OnClickListener() {
-				@Override
-				public void onClick(View v) {
-					
-					 String name = txtName.getText().toString();
-					 String cmd = txtCmd.getText().toString();
-					 updatePreset(preset, name, cmd);
-					dialog.dismiss();
-					
-				}
-			});
-			
-			Button butDelete = (Button) dialog.findViewById(R.id.button_delete);
-			butDelete.setOnClickListener(new OnClickListener() {
-				@Override
-				public void onClick(View v) {
-					
-					deletePreset(preset);
-					dialog.dismiss();
-					
-				}
-			});
-			
-			dialog.show();
-     }
 	 private  DigitalPinManager digitalPinListener  = null;
 	 
 	  private Properties getProperties(String FileName) {
@@ -307,38 +261,53 @@ public class BT_ControllerActivity extends Activity {
 
 	 }
 
-	 
-	@Override
-	protected void onCreate(Bundle savedInstanceState) {
-		super.onCreate(savedInstanceState);
-		setContentView(R.layout.activity_bt__controller);
+	
+		@Override
+	    public View onCreateView(LayoutInflater inflater, ViewGroup container,
+	            Bundle savedInstanceState)
+	          {
+		        View rootView = inflater.inflate(R.layout.activity_bt__controller, container, false);
+		        
+		        return rootView;
+	          }
 		
-		this.dbHelper = new DbAdapter(this);
 		
-		
-		this.btSender = (BT_Sender) IntentHelper.getObjectForKey(MainActivity.BT_SENDER_KEY);
-		Button butCmd = (Button)findViewById(R.id.butCmd);
-	     // butCmd.setEnabled(false);
-	      
-	      butCmd.setOnClickListener(new OnClickListener() {
-		
-			@Override
-			public void onClick(View v) {
-				if (btSender!=null)
-				{
-					EditText txtView = (EditText) findViewById(R.id.txtBtCmd);
-					btSender.sendMessage(txtView.getText().toString());
-				}
-				
-			}
-		});
-	      
-	        Properties pinMapperProperties = getProperties("pin_mapper.properties");
-			this.digitalPinListener = new DigitalPinManager(pinMapperProperties);
+		@Override 
+		public void onActivityCreated(Bundle bundle){
+			this.dbHelper = new DbAdapter(getActivity());
 			
-	      this.setupDigitalPinButtons();
-	      this.setupSeekBars();
-	      this.setupPresetsListView();
+			
+			this.btSender = (BT_Sender) IntentHelper.getObjectForKey(MainActivity.BT_SENDER_KEY);
+			Button butCmd = (Button)findViewById(R.id.butCmd);
+		     // butCmd.setEnabled(false);
+		      
+		      butCmd.setOnClickListener(new OnClickListener() {
+			
+				@Override
+				public void onClick(View v) {
+					if (btSender!=null)
+					{
+						EditText txtView = (EditText) findViewById(R.id.txtBtCmd);
+						btSender.sendMessage(txtView.getText().toString());
+					}
+					
+				}
+			});
+		      
+		        Properties pinMapperProperties = getProperties("pin_mapper.properties");
+				this.digitalPinListener = new DigitalPinManager(pinMapperProperties);
+				
+		      this.setupDigitalPinButtons();
+		      this.setupSeekBars();
+		      this.setupPresetsSpinner();
+			
+		}
+		
+	@Override
+	public void onAttach(Activity activity) {
+		super.onAttach(activity);
+		 
+		
 	}
  
 	 
@@ -346,47 +315,27 @@ public class BT_ControllerActivity extends Activity {
 	 /**
      * Function to load the spinner data from SQLite database
      * */
-    private void setupPresetsListView() {
+    private void setupPresetsSpinner() {
         
         // Spinner Drop down elements
         List<Preset> presets = loadAllPresets();
  
         // Creating adapter for spinner
-         presetAdapter = new PresetAdapter(this,
-                R.layout.preset_row, presets);
+         presetAdapter = new ArrayAdapter<Preset>(this,
+                android.R.layout.simple_spinner_item, presets);
  
         // Drop down layout style - list view with radio button
-        //resetAdapter
-        //        .setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-        ListView preset_list = (ListView) findViewById(R.id.preset_list);
-      
-        
-        LayoutInflater inflater = getLayoutInflater();
-        
-        ViewGroup header = (ViewGroup)inflater.inflate(R.layout.preset_header, preset_list, false);
-        
-        
-        
-        preset_list.addHeaderView(header, null, false);
+        presetAdapter
+                .setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        Spinner spinner = (Spinner) findViewById(R.id.preset_spinner);
+
         // attaching data adapter to spinner
-        preset_list.setAdapter(presetAdapter);
-        
-        preset_list.setOnItemLongClickListener(new OnItemLongClickListener() {
+        spinner.setAdapter(presetAdapter);
+        spinner.setOnItemSelectedListener(new OnItemSelectedListener() {
 
+		 
 			@Override
-			public boolean onItemLongClick(AdapterView<?> parent, View view,
-					int position, long id) {
-				Preset preset = (Preset) parent.getItemAtPosition(position);
-				showPresetEditorDialog(preset);
-				return false;
-			}
-		});
-        
-        preset_list.setOnItemClickListener(new OnItemClickListener() {
- 
-
-			@Override
-			public void onItemClick(AdapterView<?> parent, View view,
+			public void onItemSelected(AdapterView<?> parent, View view,
 					int position, long id) {
 				// On selecting a spinner item
 		        Preset preset = (Preset) parent.getItemAtPosition(position);
@@ -395,12 +344,16 @@ public class BT_ControllerActivity extends Activity {
 				
 			}
 
-		 
+			@Override
+			public void onNothingSelected(AdapterView<?> parent) {
+				// TODO Auto-generated method stub
+				
+			}
 		});
       
     }
     
-    private void refreshPresetList()
+    private void refreshSpinnerData()
     {
     	presetAdapter.clear();
     	presetAdapter.addAll(loadAllPresets());
@@ -445,8 +398,8 @@ public class BT_ControllerActivity extends Activity {
 		                 
 		    String presetName = cursor.getString( cursor.getColumnIndex(DbAdapter.KEY_NAME) );
 		    String presetCmd = cursor.getString( cursor.getColumnIndex(DbAdapter.KEY_CMD) );
-		    int presetId = cursor.getInt(cursor.getColumnIndex(DbAdapter.KEY_PRESETSID));
-		    presets.add(new Preset(presetId,presetName, presetCmd));
+		    
+		    presets.add(new Preset(presetName, presetCmd));
 		    Log.d(TAG, "preset name = " + presetName + " CMD:" + presetCmd);  
 		 	}
 		 dbHelper.close();
@@ -484,25 +437,10 @@ public class BT_ControllerActivity extends Activity {
 		 dbHelper.createPreset(name, cmd);
 	     dbHelper.close();
 	     
-	     // reload the presets in the list view
-	     refreshPresetList();
+	     // reload the presets in the spinner
+	     refreshSpinnerData();
 	}
 	
-	private void deletePreset(Preset preset)
-	{
-		 dbHelper.open();
-		 dbHelper.deletePreset(preset.getId());
-		 dbHelper.close();
-		 refreshPresetList();
-	}
-	
-	private void updatePreset(Preset preset, String name, String cmd)
-	{
-		dbHelper.open();
-		dbHelper.updatePreset(preset.getId(), name, cmd);
-		dbHelper.close();
-	    refreshPresetList();
-	}
 	@Override
 	public boolean onCreateOptionsMenu(Menu menu) {
 		// Inflate the menu; this adds items to the action bar if it is present.

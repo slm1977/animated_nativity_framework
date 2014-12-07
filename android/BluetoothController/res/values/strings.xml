@@ -10,6 +10,6 @@
     <string name="Find">Search new Devices / Cancel</string>
     <string name="spinner_title">Load preset</string>
     <string name="title_activity_bt__controller">BT_ControllerActivity</string>
-    
+    <string name ="bt_device_choice_prompt">Choose the bt device to connect to:</string>
 
 </resources>
