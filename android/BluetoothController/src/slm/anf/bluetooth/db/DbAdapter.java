@@ -1,15 +1,12 @@
 package slm.anf.bluetooth.db;
 
-import java.util.List;
 
-import android.content.ContentResolver;
 import android.content.ContentValues;
 import android.content.Context;
 import android.database.Cursor;
 import android.database.SQLException;
 import android.database.sqlite.SQLiteDatabase;
-import android.provider.ContactsContract;
- 
+
 public class DbAdapter {
   @SuppressWarnings("unused")
   private static final String LOG_TAG = DbAdapter.class.getSimpleName();

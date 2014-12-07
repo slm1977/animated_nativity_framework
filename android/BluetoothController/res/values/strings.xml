@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 
-    <string name="app_name">BluetoothTest</string>
+    <string name="app_name">Arduino BT Connector</string>
     <string name="save_as_preset">Save as preset</string>
     <string name="Text">Status: -</string>
     <string name="on">Turn On</string>
@@ -9,7 +9,7 @@
     <string name="List">List paired Devices</string>
     <string name="Find">Search new Devices / Cancel</string>
     <string name="spinner_title">Load preset</string>
-    <string name="title_activity_bt__controller">BT_ControllerActivity</string>
+    <string name="title_activity_bt__controller">Arduino Remote Controller</string>
     <string name ="bt_device_choice_prompt">Choose the bt device to connect to:</string>
 
 </resources>

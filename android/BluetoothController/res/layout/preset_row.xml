@@ -9,7 +9,7 @@
         android:layout_width="0dip"
         android:layout_height="wrap_content"
         android:textStyle="bold"
-        android:textSize="16sp"
+        android:textSize="20sp"
         android:gravity="fill_horizontal"
         android:text="" />
     

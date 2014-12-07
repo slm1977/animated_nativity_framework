@@ -1,8 +1,6 @@
 package slm.anf.bluetooth;
 
 import android.os.Bundle;
-import android.os.Handler;
-import android.os.Message;
 import android.app.Activity;
 import android.app.ProgressDialog;
 import android.bluetooth.BluetoothAdapter;
@@ -15,7 +13,7 @@ import java.util.Set;
 import slm.anf.bluetooth.ConnectThread.BT_Listener;
 import slm.anf.bluetooth.ConnectThread.BT_Sender;
 
-import com.javacodegeeks.android.bluetoothtest.R;
+import slm.anf.bt_controller.R;
 
 import android.content.Intent;
 import android.content.IntentFilter;
@@ -26,7 +24,6 @@ import android.widget.AdapterView;
 import android.widget.AdapterView.OnItemClickListener;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
-import android.widget.EditText;
 import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -48,6 +45,7 @@ public class MainActivity extends Activity {
    private static final String TAG = "BTMainActivity";
    
    private ProgressDialog searchDevicesProgress = null;
+   private ProgressDialog connectToDeviceProgress = null;
    
    @Override
    protected void onCreate(Bundle savedInstanceState) {
@@ -94,7 +92,13 @@ public class MainActivity extends Activity {
 				BluetoothDevice device =  myBluetoothAdapter.getRemoteDevice(macAddress);
 				Log.d(TAG,"selected:" + macAddress);
 				
-				Toast.makeText(MainActivity.this, "Connecting to:" + deviceName + "(" + macAddress +")" , Toast.LENGTH_LONG).show();
+				//Toast.makeText(MainActivity.this, "Connecting to:" + deviceName + "(" + macAddress +")" , Toast.LENGTH_LONG).show();
+				connectToDeviceProgress = new ProgressDialog(MainActivity.this);
+				connectToDeviceProgress.setTitle("Remote Blueetooth Device Connection");
+				connectToDeviceProgress.setMessage("Connecting to " + deviceName +". Please wait ...");
+				
+				connectToDeviceProgress.show();
+				
 				
 				ConnectThread ct = new ConnectThread(device, myBluetoothAdapter, new BT_Listener() {
 					
@@ -104,6 +108,7 @@ public class MainActivity extends Activity {
 						IntentHelper.addObjectForKey(btSender, BT_SENDER_KEY);
 						 
 						Intent btIntent = new Intent(MainActivity.this, BT_ControllerActivity.class);
+						connectToDeviceProgress.dismiss();
 						startActivity(btIntent);
 						
 					}
@@ -165,9 +170,7 @@ public class MainActivity extends Activity {
     	  selDevice = device;
       }
       
-      Toast.makeText(getApplicationContext(),"Show Paired Devices. Sending command!",
-    		  Toast.LENGTH_SHORT).show();
-      
+      //Toast.makeText(getApplicationContext(),"Show Paired Devices. Sending command!",  Toast.LENGTH_SHORT).show();
       
    }
    
@@ -199,7 +202,7 @@ public class MainActivity extends Activity {
 			
 			searchDevicesProgress = new ProgressDialog(this);
 			searchDevicesProgress.setTitle("Searching for bluetooth devices");
-			searchDevicesProgress.setMessage("Wait while searching...");
+			searchDevicesProgress.setMessage("Please wait while searching...");
 			searchDevicesProgress.show();
 			
 			myBluetoothAdapter.startDiscovery();

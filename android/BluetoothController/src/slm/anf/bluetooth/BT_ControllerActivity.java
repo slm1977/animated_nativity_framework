@@ -8,14 +8,14 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Properties;
 import java.util.Set;
+import java.util.TooManyListenersException;
 
 
 import slm.anf.bluetooth.ConnectThread.BT_Sender;
-import slm.anf.bluetooth.db.DatabaseHelper;
 import slm.anf.bluetooth.db.DbAdapter;
 import slm.anf.bluetooth.db.Preset;
 
-import com.javacodegeeks.android.bluetoothtest.R;
+import slm.anf.bt_controller.R;
 
 import android.app.Activity;
 import android.app.AlertDialog;
@@ -35,32 +35,28 @@ import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.AdapterView.OnItemClickListener;
 import android.widget.AdapterView.OnItemLongClickListener;
-import android.widget.AdapterView.OnItemSelectedListener;
-import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ListView;
 import android.widget.SeekBar;
 import android.widget.SeekBar.OnSeekBarChangeListener;
-import android.widget.Spinner;
 import android.widget.Toast;
 import android.widget.ToggleButton;
 
 public class BT_ControllerActivity extends Activity {
-	 public static final String TAG = "BT_ControllerActivity";
-	 private static final int NUM_PINS = 8;
-	 
+	public static final String TAG = "BT_ControllerActivity";
+	
 	private BT_Sender btSender = null;
 	private HashMap<Integer, Integer> pwmMapper = new HashMap<Integer,Integer>();
 	private DbAdapter dbHelper = null;
-	 private PresetAdapter presetAdapter = null;
+	private PresetAdapter presetAdapter = null;
 	
     private class DigitalPinManager implements OnClickListener, OnSeekBarChangeListener {
        
 		 private Properties pinMapperProps = null;
 		 private boolean invertedLogic = false;
-		 private HashMap<Integer, String>  cmdMapper = new HashMap<Integer, String>();
-			
+		 private HashMap<Integer, String>  cmdMapper = new HashMap<Integer, String>(); // Key: Pin; Value: Command
+		 private HashMap<Integer, String>  pinMapper = new HashMap<Integer, String>(); // Key Pin; Value: ButtonName
 		 
 		 public String getCommandPreset()
 		 {
@@ -76,11 +72,11 @@ public class BT_ControllerActivity extends Activity {
 		 
 		 public DigitalPinManager(Properties pinMapperProperties)
 		 {
-			 this.pinMapperProps = pinMapperProperties;
-			this.setupPWM_Mapper();
+			this.pinMapperProps = pinMapperProperties;
+			this.setupMappers();
 		 }
 		 
-		 private void setupPWM_Mapper()
+		 private void setupMappers()
 		 {   
 			 Enumeration<Object> keyElements = this.pinMapperProps.keys();
 			 while(keyElements.hasMoreElements())
@@ -88,10 +84,14 @@ public class BT_ControllerActivity extends Activity {
 				 String butName = (String)keyElements.nextElement();
 				 int[] ids = getButtonPinAndSeekBarId(butName);
 				 Log.d(TAG,"Found key id:" + ids[0]);
+				 pinMapper.put( ids[0], butName);
 				 if (ids[1]>0)
 				 {
+					 // Key: seekBarId. Value: Pin Number
 					 pwmMapper.put(ids[1], ids[0]);
 				 }
+				 // inizialize all pins to the LOW value
+				 setDigitalPinValue(ids[0],false,true);
 			 }
 			   
 		 }
@@ -140,6 +140,28 @@ public class BT_ControllerActivity extends Activity {
 			 return cmd;
 		 }
 		 
+		 public void setGUIforCommand(String cmd){
+			 
+			 String [] cmds = cmd.split("[|]");
+			 
+			 for (String c : cmds)
+			 {
+				 boolean isDigital = c.startsWith("D");
+				 int pinNumber = Integer.parseInt(c.substring(1, c.indexOf(",")));
+				 int pinValue = Integer.parseInt(c.substring(c.indexOf(",")+1));
+				 
+				 String butName = pinMapper.get(pinNumber);
+				 int butId = getResources().getIdentifier(butName, "id", getPackageName()); 
+				 
+				 ((ToggleButton) findViewById(butId)).setChecked(pinValue>0);
+				 
+				 int [] ids = getButtonPinAndSeekBarId(butName);
+				 if (ids[1]>0)
+				 {
+					 ((SeekBar) findViewById(ids[1])).setProgress(pinValue);
+				 }
+			 }
+		 }
 		/**
 		 *Get the Pin number and the seekbar id (or -1 if no provided) associated to the button specified as parameter
 		 * @param butName
@@ -167,6 +189,10 @@ public class BT_ControllerActivity extends Activity {
 		 }
 		@Override
 		public void onClick(View v) {
+			
+			preset_list.clearChoices();
+			presetAdapter.notifyDataSetChanged();
+			
 			ToggleButton selBut = (ToggleButton) v;
 			
 			 int butId = selBut.getId();
@@ -176,8 +202,7 @@ public class BT_ControllerActivity extends Activity {
 			 String cmd = null;
 			 if (ids[0]>0)
 			 {
-				 Toast.makeText(BT_ControllerActivity.this, "Pressed button:" + butName + 
-						 " mapped on Pin:" + ids[0] + " seekbar:" + ids[1], Toast.LENGTH_LONG).show();
+				// Toast.makeText(BT_ControllerActivity.this, "Pressed button:" + butName +  " mapped on Pin:" + ids[0] + " seekbar:" + ids[1], Toast.LENGTH_LONG).show();
 				 
 				 
 				 
@@ -219,14 +244,16 @@ public class BT_ControllerActivity extends Activity {
 
 		@Override
 		public void onStopTrackingTouch(SeekBar seekBar) {
-			
+		
+			preset_list.clearChoices();
+			presetAdapter.notifyDataSetChanged();
         
           if (pwmMapper.containsKey(seekBar.getId()))
         		  {
         	  		int value = seekBar.getProgress();
         	  		int pin = pwmMapper.get(seekBar.getId());
         	  		
-        	  		Toast.makeText(BT_ControllerActivity.this,"Sending cmd to pin" + pin + " to value:" + value, Toast.LENGTH_LONG).show();
+        	  		//Toast.makeText(BT_ControllerActivity.this,"Sending cmd to pin" + pin + " to value:" + value, Toast.LENGTH_LONG).show();
         		    setDigitalPinValue(pin, value);
         		  }
 			
@@ -280,6 +307,8 @@ public class BT_ControllerActivity extends Activity {
 			dialog.show();
      }
 	 private  DigitalPinManager digitalPinListener  = null;
+
+	 private ListView preset_list;
 	 
 	  private Properties getProperties(String FileName) {
 			Properties properties = new Properties();
@@ -358,14 +387,14 @@ public class BT_ControllerActivity extends Activity {
         // Drop down layout style - list view with radio button
         //resetAdapter
         //        .setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-        ListView preset_list = (ListView) findViewById(R.id.preset_list);
+        preset_list = (ListView) findViewById(R.id.preset_list);
       
         
         LayoutInflater inflater = getLayoutInflater();
         
         ViewGroup header = (ViewGroup)inflater.inflate(R.layout.preset_header, preset_list, false);
         
-        
+       
         
         preset_list.addHeaderView(header, null, false);
         // attaching data adapter to spinner
@@ -388,16 +417,22 @@ public class BT_ControllerActivity extends Activity {
 			@Override
 			public void onItemClick(AdapterView<?> parent, View view,
 					int position, long id) {
-				// On selecting a spinner item
-		        Preset preset = (Preset) parent.getItemAtPosition(position);
-				Toast.makeText(BT_ControllerActivity.this, "LOADING CMD:" + preset.getCommand(), Toast.LENGTH_LONG).show();
-				btSender.sendMessage(preset.getCommand());
-				
+				Preset preset = (Preset) parent.getItemAtPosition(position);
+				setPreset(preset);
+		        
 			}
 
 		 
 		});
       
+    }
+    
+    private void setPreset(Preset preset)
+    {
+    	
+		//Toast.makeText(BT_ControllerActivity.this, "LOADING CMD:" + preset.getCommand(), Toast.LENGTH_LONG).show();
+		btSender.sendMessage(preset.getCommand());
+		digitalPinListener.setGUIforCommand(preset.getCommand());
     }
     
     private void refreshPresetList()
@@ -415,7 +450,7 @@ public class BT_ControllerActivity extends Activity {
 		rootView.findViewsWithText(digitalPinButtons, "digital_pin", View.FIND_VIEWS_WITH_CONTENT_DESCRIPTION);
 		
 		for (View v : digitalPinButtons)
-		{
+		{  
 			v.setOnClickListener(this.digitalPinListener);
 			}
 	}
@@ -447,7 +482,7 @@ public class BT_ControllerActivity extends Activity {
 		    String presetCmd = cursor.getString( cursor.getColumnIndex(DbAdapter.KEY_CMD) );
 		    int presetId = cursor.getInt(cursor.getColumnIndex(DbAdapter.KEY_PRESETSID));
 		    presets.add(new Preset(presetId,presetName, presetCmd));
-		    Log.d(TAG, "preset name = " + presetName + " CMD:" + presetCmd);  
+		   // Log.d(TAG, "preset name = " + presetName + " CMD:" + presetCmd);  
 		 	}
 		 dbHelper.close();
 		 return presets;
@@ -479,7 +514,7 @@ public class BT_ControllerActivity extends Activity {
 	private void savePreset(String name)
 	{
 		String cmd = this.digitalPinListener.getCommandPreset();
-		Toast.makeText(this, "Cmd:" + cmd, Toast.LENGTH_LONG).show();
+		//Toast.makeText(this, "Cmd:" + cmd, Toast.LENGTH_LONG).show();
 		 dbHelper.open();
 		 dbHelper.createPreset(name, cmd);
 	     dbHelper.close();
