@@ -5,7 +5,7 @@ Created on 23/nov/2014
 '''
 
 ANF_COMMANDS_ON = True   # enable sending command to the ANF Viewer
-ARDUINO_COMMANDS_ON = True  # enable sending command to the BT Arduino Controller
+ARDUINO_COMMANDS_ON = False  # enable sending command to the BT Arduino Controller
 
 class Command:
     CLOUDS_OFF = "CLOUDS_OFF"
@@ -49,21 +49,34 @@ composite_commands ={
                     "NIGHT" : ["LIGHT_ON", "FIRE_ON", "MANY_SNOW_FLICKS_ON"],
                     "DAY" : ["LIGHT_OFF", "FIRE_OFF"],
                     "NO_CLOUDS_NO_SNOW" : [Command.SCREEN_ON, Command.CLOUDS_OFF, Command.SNOW_OFF],
-                    "CLOUDS_SNOW" : [Command.CLOUDS_ON,Command.SNOW_ON]
+                    "CLOUDS_SNOW" : [Command.SCREEN_ON, Command.CLOUDS_ON,Command.SNOW_ON]
                     }
 
 
-scheduled_commands=[(5,"NIGHT"), (10,"DAY")]
+scheduled_commands=  { "NIGHT_AND_DAY " :[(5,"NIGHT"), (10,"DAY")],
+                       "SCENE_OFF_TO_SCENE_ON" : [(0, "NO_SOUND_NO_VIDEO"), #(5,"ONLY_AUDIO"),
+                                                  (10,"NO_CLOUDS_NO_SNOW"),  (15, Command.SNOW_ON), 
+                                                  (20,"NO_CLOUDS_NO_SNOW"), (20,"NO_CLOUDS_NO_SNOW")]
+                      }
 
-scheduled_commands2=[(0, "NO_SOUND_NO_VIDEO"),
-                     #(5,"ONLY_AUDIO"),
-                     (10,"NO_CLOUDS_NO_SNOW"), 
-                     (15, Command.SNOW_ON), 
-                     (20,"NO_CLOUDS_NO_SNOW"), (20,"NO_CLOUDS_NO_SNOW")]
+
 
 from threading import Timer
 from client_socket import SocketThread, BT_ClientSocketThread
 
+
+def get_available_composite_commands():
+    return composite_commands.keys()
+
+def get_available_scheduled_commands():
+    return scheduled_commands.keys()
+
+def do_composite_command_by_key(key):
+    send_command(key)
+    
+def do_scheduled_commands_by_key(key):
+    start_commands(scheduled_commands[key])
+    
 def start_commands(scheduled_list):
     """
     Executes the sheduled command list (each element contains a tuple (<delay_time_in_seconds>, <composite_command_key>)
@@ -143,7 +156,8 @@ def format_composite_command(key):
         anf_command+= format_base_anf_viewer_command(cmd) + "|"
         
     return [arduino_command[:-1],anf_command[:-1]]
-    
+ 
 if __name__=='__main__':
     #print "NIGHT COMMAND:%s" % format_composite_command("NIGHT")
-    start_commands(scheduled_commands2)
+    start_commands(scheduled_commands["SCENE_OFF_TO_SCENE_ON"])
+    

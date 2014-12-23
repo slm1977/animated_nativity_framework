@@ -187,7 +187,7 @@ class MeteoViewer:
             if pn.y+ 10 > self.gc.screen_h:
                 self.snow_balls.remove(pn)
                 num_rem +=1
-        print "flick 1:(%s,%s)" %  (self.snow_balls[0].x, self.snow_balls[0].y)
+        #print "flick 1:(%s,%s)" %  (self.snow_balls[0].x, self.snow_balls[0].y)
         self.create_snow_balls(self.snow_balls_count - len(self.snow_balls))
         
     def draw_thunder(self): 
